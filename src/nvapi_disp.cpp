@@ -187,6 +187,30 @@ extern "C" {
                     .MaxContentLightLevel = pHDRColorDataV1->mastering_display_data.max_content_light_level,
                     .MaxFrameAverageLightLevel = pHDRColorDataV1->mastering_display_data.max_frame_average_light_level,
                 };
+
+                // Fallback to the monitor's actual EDID capabilities if the application
+                // fails to provide valid luminance boundaries (mimicking Windows NVIDIA driver behavior).
+                if (metadata.MaxMasteringLuminance == 0 || metadata.MinMasteringLuminance >= metadata.MaxMasteringLuminance * 10000) {
+                    if (log::tracing()) {
+                        log::trace("NvAPI_Disp_HdrColorControl: Invalid HDR mastering luminance bounds, enforcing safe boundaries from EDID.");
+                        log::trace(str::format("NvAPI_Disp_HdrColorControl input: max_lum (",
+                               metadata.MaxMasteringLuminance, "), min_lum (",
+                               metadata.MinMasteringLuminance, ")"));
+                        log::trace(str::format("NvAPI_Disp_HdrColorControl EDID values: max_lum (",
+                               data.MaxLuminance, "), min_lum (",
+                               data.MinLuminance, ")"));
+                    }
+
+                    metadata.MaxMasteringLuminance = data.MaxLuminance;
+                    metadata.MinMasteringLuminance = data.MinLuminance;
+                }
+
+                if (metadata.MaxContentLightLevel == 0)
+                    metadata.MaxContentLightLevel = data.MaxLuminance;
+
+                if (metadata.MaxFrameAverageLightLevel == 0)
+                    metadata.MaxFrameAverageLightLevel = data.MaxFullFrameLuminance;
+
                 if (FAILED(interop->SetGlobalHDRState(colorspace, &metadata)))
                     return InvalidArgument(n);
             }
