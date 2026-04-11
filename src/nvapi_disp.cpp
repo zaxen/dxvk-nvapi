@@ -115,6 +115,49 @@ extern "C" {
         return Ok(str::format(n, " (0x", std::hex, displayId, ")"));
     }
 
+
+    static const char* nv_hdr_mode_str(NV_HDR_MODE m) {
+        switch (m) {
+            case NV_HDR_MODE_OFF:              return "OFF";
+            case NV_HDR_MODE_UHDA:             return "UHDA (HDR10)";
+            case NV_HDR_MODE_EDR:              return "EDR";
+            case NV_HDR_MODE_SDR:              return "SDR";
+            case NV_HDR_MODE_UHDA_PASSTHROUGH: return "UHDA_PASSTHROUGH";
+            case NV_HDR_MODE_UHDA_NB:          return "UHDA_NB (notebook)";
+            case NV_HDR_MODE_DOLBY_VISION:     return "DOLBY_VISION";
+            default: {
+                static char buf[32];
+                sprintf(buf, "UNKNOWN (%d)", (int)m);
+                return buf;
+            }
+        }
+    }
+
+    static const char* dxgi_colorspace_str(DXGI_COLOR_SPACE_TYPE cs) {
+        switch (cs) {
+            case DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709:      return "RGB_FULL_G22_NONE_P709 (sRGB)";
+            case DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709:      return "RGB_FULL_G10_NONE_P709 (scRGB linear)";
+            case DXGI_COLOR_SPACE_RGB_STUDIO_G22_NONE_P709:    return "RGB_STUDIO_G22_NONE_P709";
+            case DXGI_COLOR_SPACE_RGB_STUDIO_G22_NONE_P2020:   return "RGB_STUDIO_G22_NONE_P2020";
+            case DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020:   return "RGB_FULL_G2084_NONE_P2020 (HDR10)";
+            case DXGI_COLOR_SPACE_RGB_STUDIO_G2084_NONE_P2020: return "RGB_STUDIO_G2084_NONE_P2020";
+            case DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P2020:     return "RGB_FULL_G22_NONE_P2020";
+            case DXGI_COLOR_SPACE_YCBCR_FULL_G22_NONE_P709_X601: return "YCBCR_FULL_G22_NONE_P709_X601";
+            case DXGI_COLOR_SPACE_YCBCR_STUDIO_G22_LEFT_P601:  return "YCBCR_STUDIO_G22_LEFT_P601";
+            case DXGI_COLOR_SPACE_YCBCR_FULL_G22_LEFT_P601:    return "YCBCR_FULL_G22_LEFT_P601";
+            case DXGI_COLOR_SPACE_YCBCR_STUDIO_G22_LEFT_P709:  return "YCBCR_STUDIO_G22_LEFT_P709";
+            case DXGI_COLOR_SPACE_YCBCR_FULL_G22_LEFT_P709:    return "YCBCR_FULL_G22_LEFT_P709";
+            case DXGI_COLOR_SPACE_YCBCR_STUDIO_G22_LEFT_P2020: return "YCBCR_STUDIO_G22_LEFT_P2020";
+            case DXGI_COLOR_SPACE_YCBCR_FULL_G22_LEFT_P2020:   return "YCBCR_FULL_G22_LEFT_P2020";
+            case DXGI_COLOR_SPACE_YCBCR_STUDIO_G2084_LEFT_P2020: return "YCBCR_STUDIO_G2084_LEFT_P2020";
+            default: {
+                static char buf[32];
+                sprintf(buf, "UNKNOWN (%d)", (int)cs);
+                return buf;
+            }
+        }
+    }
+
     NvAPI_Status __cdecl NvAPI_Disp_HdrColorControl(NvU32 displayId, NV_HDR_COLOR_DATA* pHdrColorData) {
         constexpr auto n = __func__;
 
@@ -176,7 +219,26 @@ extern "C" {
                     pHDRColorDataV1->mastering_display_data.max_frame_average_light_level = data.MaxFullFrameLuminance;
                 }
             } else {
+                log::trace("NVAPI: NvAPI_Disp_HdrColorControl SET cmd:");
+                log::trace(str::format("  hdrMode: ", nv_hdr_mode_str(pHDRColorDataV1->hdrMode), " (", (int)pHDRColorDataV1->hdrMode, ")"));
+                log::trace(str::format("  static_metadata_descriptor_id: ", pHDRColorDataV1->static_metadata_descriptor_id));
+                log::trace("  mastering_display_data:");
+                log::trace(str::format("    displayPrimary_x0: ", pHDRColorDataV1->mastering_display_data.displayPrimary_x0));
+                log::trace(str::format("    displayPrimary_y0: ", pHDRColorDataV1->mastering_display_data.displayPrimary_y0));
+                log::trace(str::format("    displayPrimary_x1: ", pHDRColorDataV1->mastering_display_data.displayPrimary_x1));
+                log::trace(str::format("    displayPrimary_y1: ", pHDRColorDataV1->mastering_display_data.displayPrimary_y1));
+                log::trace(str::format("    displayPrimary_x2: ", pHDRColorDataV1->mastering_display_data.displayPrimary_x2));
+                log::trace(str::format("    displayPrimary_y2: ", pHDRColorDataV1->mastering_display_data.displayPrimary_y2));
+                log::trace(str::format("    displayWhitePoint_x: ", pHDRColorDataV1->mastering_display_data.displayWhitePoint_x));
+                log::trace(str::format("    displayWhitePoint_y: ", pHDRColorDataV1->mastering_display_data.displayWhitePoint_y));
+                log::trace(str::format("    max_display_mastering_luminance: ", pHDRColorDataV1->mastering_display_data.max_display_mastering_luminance));
+                log::trace(str::format("    min_display_mastering_luminance: ", pHDRColorDataV1->mastering_display_data.min_display_mastering_luminance));
+                log::trace(str::format("    max_content_light_level: ", pHDRColorDataV1->mastering_display_data.max_content_light_level));
+                log::trace(str::format("    max_frame_average_light_level: ", pHDRColorDataV1->mastering_display_data.max_frame_average_light_level));
+
                 DXGI_COLOR_SPACE_TYPE colorspace = HDRModeToColorSpace(pHDRColorDataV1->hdrMode);
+                log::trace(str::format("NVAPI: Map HDR mode to DXGI Color Space: ", dxgi_colorspace_str(colorspace), " (", (int)colorspace, ")"));
+                
                 DXGI_HDR_METADATA_HDR10 metadata = {
                     .RedPrimary = {pHDRColorDataV1->mastering_display_data.displayPrimary_x0, pHDRColorDataV1->mastering_display_data.displayPrimary_y0},
                     .GreenPrimary = {pHDRColorDataV1->mastering_display_data.displayPrimary_x1, pHDRColorDataV1->mastering_display_data.displayPrimary_y1},
@@ -188,8 +250,8 @@ extern "C" {
                     .MaxFrameAverageLightLevel = pHDRColorDataV1->mastering_display_data.max_frame_average_light_level,
                 };
 
-                // Fallback to the monitor's actual EDID capabilities if the application
-                // fails to provide valid luminance boundaries (mimicking Windows NVIDIA driver behavior).
+                // NVAPI on Windows actually totally ignores the input as far as I can tell but just
+                // to be safe, we'll only sanitise values when the input is 0.
                 if (metadata.MaxMasteringLuminance == 0 || metadata.MinMasteringLuminance >= metadata.MaxMasteringLuminance * 10000) {
                     if (log::tracing()) {
                         log::trace("NvAPI_Disp_HdrColorControl: Invalid HDR mastering luminance bounds, enforcing safe boundaries from EDID.");
@@ -203,6 +265,40 @@ extern "C" {
 
                     metadata.MaxMasteringLuminance = data.MaxLuminance;
                     metadata.MinMasteringLuminance = data.MinLuminance;
+                }
+
+                bool needsPrimaryFallback = (metadata.RedPrimary[0] == 0 && metadata.RedPrimary[1] == 0) &&
+                                            (metadata.GreenPrimary[0] == 0 && metadata.GreenPrimary[1] == 0) &&
+                                            (metadata.BluePrimary[0] == 0 && metadata.BluePrimary[1] == 0);
+
+                if (needsPrimaryFallback) {
+                    if (log::tracing()) {
+                        log::trace("NvAPI_Disp_HdrColorControl: Invalid primary coordinates, enforcing boundaries from EDID.");
+                        log::trace(str::format("NvAPI_Disp_HdrColorControl EDID values: R(",
+                               data.RedPrimaryX, ",", data.RedPrimaryY, "), G(",
+                               data.GreenPrimaryX, ",", data.GreenPrimaryY, "), B(",
+                               data.BluePrimaryX, ",", data.BluePrimaryY, ")"));
+                    }
+
+                    metadata.RedPrimary[0] = data.RedPrimaryX;
+                    metadata.RedPrimary[1] = data.RedPrimaryY;
+                    metadata.GreenPrimary[0] = data.GreenPrimaryX;
+                    metadata.GreenPrimary[1] = data.GreenPrimaryY;
+                    metadata.BluePrimary[0] = data.BluePrimaryX;
+                    metadata.BluePrimary[1] = data.BluePrimaryY;
+                }
+
+                bool needsWhitePointFallback = (metadata.WhitePoint[0] == 0 && metadata.WhitePoint[1] == 0);
+
+                if (needsWhitePointFallback) {
+                    if (log::tracing()) {
+                        log::trace("NvAPI_Disp_HdrColorControl: Invalid white point, enforcing boundaries from EDID.");
+                        log::trace(str::format("NvAPI_Disp_HdrColorControl EDID values: W(",
+                               data.WhitePointX, ",", data.WhitePointY, ")"));
+                    }
+
+                    metadata.WhitePoint[0] = data.WhitePointX;
+                    metadata.WhitePoint[1] = data.WhitePointY;
                 }
 
                 if (metadata.MaxContentLightLevel == 0)
